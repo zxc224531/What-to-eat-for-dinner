@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>晚餐吃什麼？(自定義版)</title>
+    <title>晚餐吃什麼？(平日/假日版)</title>
     <style>
         body {
             display: flex;
@@ -12,15 +12,38 @@
             font-family: '微軟正黑體', sans-serif;
             background-color: #fdfbf7;
             margin: 0;
-            padding: 30px 10px;
+            padding: 20px 10px;
         }
-        h1 { color: #333; margin-bottom: 10px; }
+        h1 { color: #333; margin-bottom: 15px; }
         
+        /* 分頁按鈕樣式 */
+        .tabs {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 10px;
+        }
+        .tab-btn {
+            padding: 10px 25px;
+            border: none;
+            background-color: #e0e0e0;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+            color: #555;
+            transition: 0.3s;
+        }
+        .tab-btn.active {
+            background-color: #ff4757;
+            color: white;
+            box-shadow: 0 4px 10px rgba(255, 71, 87, 0.3);
+        }
+
         #wheel-container {
             position: relative;
             width: 320px;
             height: 320px;
-            margin: 20px 0;
+            margin: 15px 0;
         }
         #pointer {
             position: absolute;
@@ -30,7 +53,7 @@
             width: 0; height: 0;
             border-left: 18px solid transparent;
             border-right: 18px solid transparent;
-            border-top: 35px solid #ff4757;
+            border-top: 35px solid #333; /* 指針改深色更明顯 */
             z-index: 10;
         }
         canvas {
@@ -41,28 +64,23 @@
             transition: transform 4s cubic-bezier(0.15, 0, 0.15, 1);
         }
         
-        .controls {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 15px;
-            margin-top: 10px;
-            width: 100%;
-            max-width: 400px;
-        }
-        
         button {
-            padding: 12px 40px;
-            font-size: 20px;
-            font-weight: bold;
-            color: white;
-            background-color: #2ed573;
             border: none;
             border-radius: 30px;
             cursor: pointer;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            font-weight: bold;
+            color: white;
+            transition: 0.2s;
         }
         button:active { transform: translateY(2px); }
+        
+        .spin-btn {
+            padding: 12px 40px;
+            font-size: 22px;
+            background-color: #2ed573;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-top: 5px;
+        }
         
         #result {
             margin: 15px 0;
@@ -70,6 +88,7 @@
             font-weight: bold;
             color: #ff4757;
             height: 35px;
+            text-align: center;
         }
 
         /* 編輯區域樣式 */
@@ -77,9 +96,10 @@
             background: #fff;
             padding: 15px;
             border-radius: 10px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
             width: 90%;
-            margin-top: 30px;
+            max-width: 400px;
+            margin-top: 15px;
         }
         .edit-section label {
             font-weight: bold;
@@ -91,42 +111,72 @@
             width: 100%;
             height: 80px;
             padding: 10px;
-            border: 1px solid #ddd;
+            border: 1px solid #ccc;
             border-radius: 5px;
             box-sizing: border-box;
-            font-size: 14px;
+            font-size: 15px;
             resize: none;
+            font-family: '微軟正黑體', sans-serif;
+        }
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+            justify-content: center;
         }
         .update-btn {
             background-color: #747d8c;
-            font-size: 14px;
-            padding: 8px 20px;
-            margin-top: 10px;
+            font-size: 15px;
+            padding: 10px 20px;
+        }
+        .reset-btn {
+            background-color: #ff6b81;
+            font-size: 15px;
+            padding: 10px 20px;
         }
     </style>
 </head>
 <body>
 
     <h1>🤤 今晚吃什麼？</h1>
+
+    <div class="tabs">
+        <button id="btn-weekday" class="tab-btn active" onclick="switchTab('weekday')">📅 平日</button>
+        <button id="btn-weekend" class="tab-btn" onclick="switchTab('weekend')">🎉 假日</button>
+    </div>
     
     <div id="wheel-container">
         <div id="pointer"></div>
         <canvas id="wheelCanvas" width="500" height="500"></canvas>
     </div>
     
-    <div id="result"></div>
+    <div id="result">準備好就開轉！</div>
     
-    <div class="controls">
-        <button onclick="spinWheel()" id="spinBtn">點我開轉！</button>
-    </div>
+    <button class="spin-btn" onclick="spinWheel()">點我開轉！</button>
 
     <div class="edit-section">
-        <label>✏️ 編輯清單 (用逗號隔開)：</label>
-        <textarea id="optionsInput">subway, 麥當勞, 肯德基, 便當, 滷味, 臭豆腐, 超商, 八方, 雞排, 炸雞, 回家煮, 小吃(麵)</textarea>
-        <button class="update-btn" onclick="updateOptions()">更新轉盤項目</button>
+        <label>✏️ 編輯目前清單 (用逗號隔開)：</label>
+        <textarea id="optionsInput"></textarea>
+        <div class="btn-group">
+            <button class="update-btn" onclick="updateOptions()">✅ 更新轉盤</button>
+            <button class="reset-btn" onclick="restoreDefault()">🔄 恢復預設</button>
+        </div>
     </div>
 
     <script>
+        // 預設資料
+        const defaults = {
+            weekday: "subway, 麥當勞, 肯德基, 便當, 滷味, 臭豆腐, 超商, 八方, 雞排, 炸雞, 回家煮, 小吃(麵)",
+            weekend: "泰式, 鐵板燒, 炸物, 披薩, 麥當勞, 火鍋, 貳樓, 義式, 咖哩飯"
+        };
+
+        // 儲存使用者目前的編輯狀態 (預設載入 defaults)
+        let savedTexts = {
+            weekday: defaults.weekday,
+            weekend: defaults.weekend
+        };
+
+        let currentMode = 'weekday'; // 預設開啟平日模式
         let options = [];
         const colors = ["#ff9a9e", "#fecfef", "#a1c4fd", "#c2e9fb", "#d4fc79", "#96e6a1", "#ffd194", "#70e1f5", "#e2ebf0", "#cfd9df"];
         
@@ -135,7 +185,37 @@
         let currentRotation = 0;
         let isSpinning = false;
 
-        // 初始化/更新選項
+        // 切換 平日/假日
+        function switchTab(mode) {
+            if (isSpinning) return;
+            
+            // 先把當前文字框的內容存起來，避免切換時心血不見
+            savedTexts[currentMode] = document.getElementById("optionsInput").value;
+            
+            // 切換模式
+            currentMode = mode;
+
+            // 更新按鈕外觀
+            document.getElementById('btn-weekday').classList.remove('active');
+            document.getElementById('btn-weekend').classList.remove('active');
+            document.getElementById(`btn-${mode}`).classList.add('active');
+
+            // 載入該模式的清單並更新轉盤
+            document.getElementById("optionsInput").value = savedTexts[mode];
+            document.getElementById("result").innerText = mode === 'weekday' ? "📅 平日模式" : "🎉 假日模式";
+            updateOptions();
+        }
+
+        // 恢復預設值
+        function restoreDefault() {
+            if (isSpinning) return;
+            // 將輸入框內容替換成當前模式的預設值
+            document.getElementById("optionsInput").value = defaults[currentMode];
+            updateOptions();
+            document.getElementById("result").innerText = "🔄 已恢復預設清單！";
+        }
+
+        // 更新選項並重畫轉盤
         function updateOptions() {
             if (isSpinning) return;
             const input = document.getElementById("optionsInput").value;
@@ -143,11 +223,13 @@
             options = input.split(',').map(item => item.trim()).filter(item => item !== "");
             
             if (options.length < 2) {
-                alert("請至少輸入兩個項目喔！");
+                alert("請至少保留兩個項目才能轉喔！");
                 return;
             }
+            
+            // 更新儲存狀態
+            savedTexts[currentMode] = input;
             drawWheel();
-            document.getElementById("result").innerText = "清單已更新！";
         }
 
         // 畫轉盤
@@ -181,7 +263,7 @@
                 );
                 ctx.rotate(angle + arcSize / 2);
                 ctx.fillStyle = "#333";
-                ctx.font = options.length > 10 ? "bold 18px 微軟正黑體" : "bold 22px 微軟正黑體";
+                ctx.font = options.length > 10 ? "bold 18px 微軟正黑體" : "bold 24px 微軟正黑體";
                 ctx.fillText(options[i], -ctx.measureText(options[i]).width / 2, 8);
                 ctx.restore();
             }
@@ -189,7 +271,7 @@
 
         // 旋轉邏輯
         function spinWheel() {
-            if (isSpinning || options.length === 0) return;
+            if (isSpinning || options.length < 2) return;
             isSpinning = true;
             document.getElementById("result").innerText = "命運轉動中...";
 
@@ -202,7 +284,6 @@
             setTimeout(() => {
                 const numOptions = options.length;
                 const actualDegree = currentRotation % 360;
-                // 指針在 12 點鐘 (270度)，計算對應索引
                 const pointerAngle = (360 - actualDegree + 270) % 360;
                 const winningIndex = Math.floor(pointerAngle / (360 / numOptions));
                 
@@ -211,7 +292,8 @@
             }, 4000);
         }
 
-        // 網頁開啟後自動畫第一次
+        // 網頁開啟後初始化
+        document.getElementById("optionsInput").value = defaults.weekday;
         updateOptions();
     </script>
 </body>
