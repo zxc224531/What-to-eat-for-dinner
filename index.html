@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>晚餐吃什麼？(自定義版)</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-family: '微軟正黑體', sans-serif;
+            background-color: #fdfbf7;
+            margin: 0;
+            padding: 30px 10px;
+        }
+        h1 { color: #333; margin-bottom: 10px; }
+        
+        #wheel-container {
+            position: relative;
+            width: 320px;
+            height: 320px;
+            margin: 20px 0;
+        }
+        #pointer {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0; height: 0;
+            border-left: 18px solid transparent;
+            border-right: 18px solid transparent;
+            border-top: 35px solid #ff4757;
+            z-index: 10;
+        }
+        canvas {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+            transition: transform 4s cubic-bezier(0.15, 0, 0.15, 1);
+        }
+        
+        .controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            margin-top: 10px;
+            width: 100%;
+            max-width: 400px;
+        }
+        
+        button {
+            padding: 12px 40px;
+            font-size: 20px;
+            font-weight: bold;
+            color: white;
+            background-color: #2ed573;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        button:active { transform: translateY(2px); }
+        
+        #result {
+            margin: 15px 0;
+            font-size: 26px;
+            font-weight: bold;
+            color: #ff4757;
+            height: 35px;
+        }
+
+        /* 編輯區域樣式 */
+        .edit-section {
+            background: #fff;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            width: 90%;
+            margin-top: 30px;
+        }
+        .edit-section label {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 8px;
+            color: #666;
+        }
+        textarea {
+            width: 100%;
+            height: 80px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-sizing: border-box;
+            font-size: 14px;
+            resize: none;
+        }
+        .update-btn {
+            background-color: #747d8c;
+            font-size: 14px;
+            padding: 8px 20px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>🤤 今晚吃什麼？</h1>
+    
+    <div id="wheel-container">
+        <div id="pointer"></div>
+        <canvas id="wheelCanvas" width="500" height="500"></canvas>
+    </div>
+    
+    <div id="result"></div>
+    
+    <div class="controls">
+        <button onclick="spinWheel()" id="spinBtn">點我開轉！</button>
+    </div>
+
+    <div class="edit-section">
+        <label>✏️ 編輯清單 (用逗號隔開)：</label>
+        <textarea id="optionsInput">subway, 麥當勞, 肯德基, 便當, 滷味, 臭豆腐, 超商, 八方, 雞排, 炸雞, 回家煮, 小吃(麵)</textarea>
+        <button class="update-btn" onclick="updateOptions()">更新轉盤項目</button>
+    </div>
+
+    <script>
+        let options = [];
+        const colors = ["#ff9a9e", "#fecfef", "#a1c4fd", "#c2e9fb", "#d4fc79", "#96e6a1", "#ffd194", "#70e1f5", "#e2ebf0", "#cfd9df"];
+        
+        const canvas = document.getElementById("wheelCanvas");
+        const ctx = canvas.getContext("2d");
+        let currentRotation = 0;
+        let isSpinning = false;
+
+        // 初始化/更新選項
+        function updateOptions() {
+            if (isSpinning) return;
+            const input = document.getElementById("optionsInput").value;
+            // 處理字串，轉成陣列並去除空白
+            options = input.split(',').map(item => item.trim()).filter(item => item !== "");
+            
+            if (options.length < 2) {
+                alert("請至少輸入兩個項目喔！");
+                return;
+            }
+            drawWheel();
+            document.getElementById("result").innerText = "清單已更新！";
+        }
+
+        // 畫轉盤
+        function drawWheel() {
+            const numOptions = options.length;
+            const arcSize = (2 * Math.PI) / numOptions;
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const radius = centerX;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            for (let i = 0; i < numOptions; i++) {
+                const angle = i * arcSize;
+                
+                // 畫扇形
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, radius, angle, angle + arcSize, false);
+                ctx.lineTo(centerX, centerY);
+                ctx.fillStyle = colors[i % colors.length];
+                ctx.fill();
+                ctx.strokeStyle = "#fff";
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // 寫文字
+                ctx.save();
+                ctx.translate(
+                    centerX + Math.cos(angle + arcSize / 2) * (radius * 0.65), 
+                    centerY + Math.sin(angle + arcSize / 2) * (radius * 0.65)
+                );
+                ctx.rotate(angle + arcSize / 2);
+                ctx.fillStyle = "#333";
+                ctx.font = options.length > 10 ? "bold 18px 微軟正黑體" : "bold 22px 微軟正黑體";
+                ctx.fillText(options[i], -ctx.measureText(options[i]).width / 2, 8);
+                ctx.restore();
+            }
+        }
+
+        // 旋轉邏輯
+        function spinWheel() {
+            if (isSpinning || options.length === 0) return;
+            isSpinning = true;
+            document.getElementById("result").innerText = "命運轉動中...";
+
+            const randomDegree = Math.floor(Math.random() * 360);
+            const totalDegree = 1800 + randomDegree; 
+            currentRotation += totalDegree;
+
+            canvas.style.transform = `rotate(${currentRotation}deg)`;
+
+            setTimeout(() => {
+                const numOptions = options.length;
+                const actualDegree = currentRotation % 360;
+                // 指針在 12 點鐘 (270度)，計算對應索引
+                const pointerAngle = (360 - actualDegree + 270) % 360;
+                const winningIndex = Math.floor(pointerAngle / (360 / numOptions));
+                
+                document.getElementById("result").innerText = "🎉 決定吃：" + options[winningIndex] + "！";
+                isSpinning = false;
+            }, 4000);
+        }
+
+        // 網頁開啟後自動畫第一次
+        updateOptions();
+    </script>
+</body>
+</html>
+
